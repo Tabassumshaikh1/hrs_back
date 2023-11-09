@@ -1,18 +1,26 @@
 const schema = require("../Model/Register");
 const jwt = require('jsonwebtoken');
+const bcrypt = require("bcrypt")
+const saltRounds = 10;
 async function regis(req, res) {
  //check if user already exists or not
   const check_email=await schema.find({email:req.body.email})
+  //check phone number
+  const check_phone = await schema.find({contactno:req.body.contactno})
+  const hashPassword = await bcrypt.hash(req.body.password, saltRounds)
+  console.log("Hash Password",hashPassword)
   if(check_email.length!=0){
-    res.send({msg:"User Already exists",status:1})
+    res.send({msg:"Email Already exists Try Another one",status:1})
+  }
+  else if(check_phone.length!=0){
+    res.send({msg:"Number Already exists Try Another one",status:1})
   }
   else{
-    const data = await schema({...req.body})
-    data.save()
-  
-   
+    const reqData = req.body
+    reqData.password=hashPassword
+    const data = await schema({...reqData})
+    data.save();   
     res.send({msg:"Registered successfully",status:0})
-
   }
  
 }
@@ -26,8 +34,6 @@ if(data){
     time: Date(), 
     userData:data , 
   } 
-  console.log("GW",tokenTime)
-
   const token = jwt.sign(tokenTime, jwtSecretKey);
   console.log("Token",token)
   res.send({msg:"Login successfull",token:token,status:0})
